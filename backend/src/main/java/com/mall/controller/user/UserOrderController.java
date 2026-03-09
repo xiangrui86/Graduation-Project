@@ -35,7 +35,10 @@ public class UserOrderController {
         String receiverAddress = (String) body.get("receiverAddress");
         try {
             Order order = orderService.createFromCart(currentUserId(auth), merchantId, receiverName, receiverPhone, receiverAddress);
-            return Result.ok(order);
+            // 获取该订单的商品名称列表
+            List<OrderItem> items = orderService.getItems(order.getId());
+            List<String> productNames = items.stream().map(OrderItem::getProductName).toList();
+            return Result.ok(productNames);
         } catch (Exception e) {
             return Result.fail(e.getMessage());
         }

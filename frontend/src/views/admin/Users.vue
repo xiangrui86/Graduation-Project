@@ -1,6 +1,12 @@
 <template>
   <div>
     <h2>用户管理</h2>
+    <el-button
+      type="primary"
+      @click="openCreateDialog"
+      style="margin-bottom: 12px"
+      >新增用户</el-button
+    >
     <el-table :data="list" border>
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="username" label="用户名" />
@@ -8,26 +14,133 @@
       <el-table-column prop="role" label="角色" width="100" />
       <el-table-column prop="enabled" label="启用" width="80">
         <template slot-scope="scope">
-          <el-tag :type="scope.row.enabled ? 'success' : 'info'">{{ scope.row.enabled ? '是' : '否' }}</el-tag>
+          <el-tag :type="scope.row.enabled ? 'success' : 'info'">{{
+            scope.row.enabled ? "是" : "否"
+          }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="150">
+        <template slot-scope="scope">
+          <el-button type="text" size="small" @click="openEditDialog(scope.row)"
+            >编辑</el-button
+          >
+          <el-button type="text" size="small" @click="deleteUser(scope.row.id)"
+            >删除</el-button
+          >
         </template>
       </el-table-column>
     </el-table>
+
+    <el-dialog
+      :title="isEdit ? '编辑用户' : '新增用户'"
+      :visible.sync="dialogVisible"
+      width="500px"
+    >
+      <el-form :model="form" label-width="100px">
+        <el-form-item label="用户名">
+          <el-input v-model="form.username" :disabled="isEdit" />
+        </el-form-item>
+        <el-form-item label="密码" v-if="!isEdit">
+          <el-input v-model="form.password" type="password" />
+        </el-form-item>
+        <el-form-item label="昵称">
+          <el-input v-model="form.nickname" />
+        </el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="form.role">
+            <el-option label="用户" value="USER" />
+            <el-option label="商家" value="MERCHANT" />
+            <el-option label="管理员" value="ADMIN" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="启用">
+          <el-switch v-model="form.enabled" />
+        </el-form-item>
+      </el-form>
+      <span slot="footer">
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitForm">提交</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getUsers } from '@/api/admin'
+import { getUsers, createUser, updateUser, deleteUser } from "@/api/admin";
 
 export default {
-  name: 'AdminUsers',
+  name: "AdminUsers",
   data() {
-    return { list: [] }
+    return {
+      list: [],
+      dialogVisible: false,
+      isEdit: false,
+      form: {
+        username: "",
+        password: "",
+        nickname: "",
+        role: "USER",
+        enabled: true,
+      },
+    };
   },
   created() {
-    getUsers().then(res => {
-      if (res.data && res.data.content) this.list = res.data.content
-      else if (Array.isArray(res.data)) this.list = res.data
-    })
-  }
-}
+    this.loadUsers();
+  },
+  methods: {
+    loadUsers() {
+      getUsers().then((res) => {
+        if (res.data && res.data.content) this.list = res.data.content;
+        else if (Array.isArray(res.data)) this.list = res.data;
+      });
+    },
+    openCreateDialog() {
+      this.isEdit = false;
+      this.form = {
+        username: "",
+        password: "",
+        nickname: "",
+        role: "USER",
+        enabled: true,
+      };
+      this.dialogVisible = true;
+    },
+    openEditDialog(row) {
+      this.isEdit = true;
+      this.form = { ...row };
+      this.dialogVisible = true;
+    },
+    submitForm() {
+      const f = this.form;
+      if (!f.username || !f.nickname || !f.role) {
+        this.$message.warning("请填写必填项");
+        return;
+      }
+      const promise = this.isEdit ? updateUser(f.id, f) : createUser(f);
+      promise.then((res) => {
+        if (res.code === 200) {
+          this.$message.success(this.isEdit ? "更新成功" : "创建成功");
+          this.dialogVisible = false;
+          this.loadUsers();
+        } else {
+          this.$message.error(res.message || "操作失败");
+        }
+      });
+    },
+    deleteUser(id) {
+      this.$confirm("确认删除？", "提示", { type: "warning" })
+        .then(() => {
+          deleteUser(id).then((res) => {
+            if (res.code === 200) {
+              this.$message.success("删除成功");
+              this.loadUsers();
+            } else {
+              this.$message.error(res.message || "删除失败");
+            }
+          });
+        })
+        .catch(() => {});
+    },
+  },
+};
 </script>

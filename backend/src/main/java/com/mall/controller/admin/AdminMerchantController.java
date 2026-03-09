@@ -39,4 +39,10 @@ public class AdminMerchantController {
         return m.map(merchant -> Result.ok(merchant))
                 .orElse(Result.fail("商家不存在"));
     }
+
+    @DeleteMapping("/{id}")
+    public Result<?> delete(@PathVariable Long id) {
+        merchantRepository.deleteById(id);
+        return Result.ok(null);
+    }
 }

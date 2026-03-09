@@ -66,4 +66,10 @@ public class AdminUserController {
         userRepository.save(u);
         return ResponseEntity.ok(Result.ok(u));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Result<?>> delete(@PathVariable Long id) {
+        userRepository.deleteById(id);
+        return ResponseEntity.ok(Result.ok(null));
+    }
 }
